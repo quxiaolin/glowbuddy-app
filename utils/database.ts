@@ -113,7 +113,7 @@ export const getPetStatus = (): Promise<any> => {
 export const updatePetStatus = (status: any) => {
   db.transaction(tx => {
     tx.executeSql(
-      `UPDATE pet_status SET mood = ?, hunger = ?, coins = ?, last_fed = ? WHERE id = 1;`,
+      `UPDATE pet_status SET mood = ?, hunger = ?, coins = ?, last_fed = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1;`,
       [status.mood, status.hunger, status.coins, status.lastFed],
       (_, result) => {
         console.log('Pet status updated successfully');
@@ -125,35 +125,43 @@ export const updatePetStatus = (status: any) => {
   });
 };
 
-// 添加金币
+// 增加金币
 export const addCoins = (amount: number) => {
-  db.transaction(tx => {
-    tx.executeSql(
-      `UPDATE pet_status SET coins = coins + ? WHERE id = 1;`,
-      [amount],
-      (_, result) => {
-        console.log(`Added ${amount} coins successfully`);
-      },
-      (_, error) => {
-        console.error('Error adding coins:', error);
-      }
-    );
+  return new Promise<void>((resolve, reject) => {
+    db.transaction(tx => {
+      tx.executeSql(
+        `UPDATE pet_status SET coins = coins + ? WHERE id = 1;`,
+        [amount],
+        (_, result) => {
+          console.log(\`Added \${amount} coins successfully\`);
+          resolve();
+        },
+        (_, error) => {
+          console.error('Error adding coins:', error);
+          reject(error);
+        }
+      );
+    });
   });
 };
 
 // 扣除金币
 export const subtractCoins = (amount: number) => {
-  db.transaction(tx => {
-    tx.executeSql(
-      `UPDATE pet_status SET coins = coins - ? WHERE id = 1;`,
-      [amount],
-      (_, result) => {
-        console.log(`Subtracted ${amount} coins successfully`);
-      },
-      (_, error) => {
-        console.error('Error subtracting coins:', error);
-      }
-    );
+  return new Promise<void>((resolve, reject) => {
+    db.transaction(tx => {
+      tx.executeSql(
+        `UPDATE pet_status SET coins = coins - ? WHERE id = 1;`,
+        [amount],
+        (_, result) => {
+          console.log(\`Subtracted \${amount} coins successfully\`);
+          resolve();
+        },
+        (_, error) => {
+          console.error('Error subtracting coins:', error);
+          reject(error);
+        }
+      );
+    });
   });
 };
 
@@ -182,17 +190,21 @@ export const getCoins = (): Promise<number> => {
 
 // 添加物品到库存
 export const addItemToInventory = (itemId: string) => {
-  db.transaction(tx => {
-    tx.executeSql(
-      `INSERT INTO inventory (item_id) VALUES (?);`,
-      [itemId],
-      (_, result) => {
-        console.log(`Item ${itemId} added to inventory`);
-      },
-      (_, error) => {
-        console.error('Error adding item to inventory:', error);
-      }
-    );
+  return new Promise<void>((resolve, reject) => {
+    db.transaction(tx => {
+      tx.executeSql(
+        `INSERT INTO inventory (item_id) VALUES (?);`,
+        [itemId],
+        (_, result) => {
+          console.log(\`Item \${itemId} added to inventory\`);
+          resolve();
+        },
+        (_, error) => {
+          console.error('Error adding item to inventory:', error);
+          reject(error);
+        }
+      );
+    });
   });
 };
 
@@ -219,17 +231,21 @@ export const getInventory = (): Promise<any[]> => {
 
 // 记录购买历史
 export const recordPurchase = (itemId: string, coinsSpent: number) => {
-  db.transaction(tx => {
-    tx.executeSql(
-      `INSERT INTO purchase_history (item_id, coins_spent) VALUES (?, ?);`,
-      [itemId, coinsSpent],
-      (_, result) => {
-        console.log(`Purchase recorded: ${itemId}, spent: ${coinsSpent}`);
-      },
-      (_, error) => {
-        console.error('Error recording purchase:', error);
-      }
-    );
+  return new Promise<void>((resolve, reject) => {
+    db.transaction(tx => {
+      tx.executeSql(
+        `INSERT INTO purchase_history (item_id, coins_spent) VALUES (?, ?);`,
+        [itemId, coinsSpent],
+        (_, result) => {
+          console.log(\`Purchase recorded: \${itemId}, spent: \${coinsSpent}\`);
+          resolve();
+        },
+        (_, error) => {
+          console.error('Error recording purchase:', error);
+          reject(error);
+        }
+      );
+    });
   });
 };
 
@@ -257,17 +273,21 @@ export const getPurchaseHistory = (): Promise<any[]> => {
 
 // 添加聊天记录
 export const addChatMessage = (message: string, sender: 'user' | 'ai') => {
-  db.transaction(tx => {
-    tx.executeSql(
-      `INSERT INTO chat_history (message, sender) VALUES (?, ?);`,
-      [message, sender],
-      (_, result) => {
-        console.log(`Chat message added: ${sender}`);
-      },
-      (_, error) => {
-        console.error('Error adding chat message:', error);
-      }
-    );
+  return new Promise<void>((resolve, reject) => {
+    db.transaction(tx => {
+      tx.executeSql(
+        `INSERT INTO chat_history (message, sender) VALUES (?, ?);`,
+        [message, sender],
+        (_, result) => {
+          console.log(\`Chat message added: \${sender}\`);
+          resolve();
+        },
+        (_, error) => {
+          console.error('Error adding chat message:', error);
+          reject(error);
+        }
+      );
+    });
   });
 };
 
@@ -293,30 +313,46 @@ export const getChatHistory = (): Promise<any[]> => {
 // 检查今日是否已领取奖励
 export const checkDailyRewardClaimed = (): Promise<boolean> => {
   return new Promise((resolve, reject) => {
-    // 简单的检查，实际实现可能需要更复杂的时间比较
     const today = new Date().toDateString();
-    
-    // 我们可以存储最后登录日期并比较
+    const lastRewardDate = localStorage.getItem('lastRewardDate');
+    resolve(lastRewardDate === today);
+  });
+};
+
+// 标记今日奖励已领取
+export const markDailyRewardClaimed = () => {
+  const today = new Date().toDateString();
+  localStorage.setItem('lastRewardDate', today);
+  console.log(\`Daily reward marked as claimed for: \${today}\`);
+};
+
+// 更新饱食度
+export const updateHunger = (newHunger: number) => {
+  return new Promise<void>((resolve, reject) => {
     db.transaction(tx => {
       tx.executeSql(
-        `SELECT created_at FROM pet_status WHERE id = 1;`,
-        [],
-        (_, { rows }) => {
-          // 这里简化处理，实际应检查每日奖励表
-          resolve(false); // 默认返回false，表示未领取
+        `UPDATE pet_status SET hunger = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1;`,
+        [newHunger],
+        (_, result) => {
+          console.log(\`Hunger updated to: \${newHunger}\`);
+          resolve();
         },
         (_, error) => {
-          console.error('Error checking daily reward:', error);
-          resolve(false);
+          console.error('Error updating hunger:', error);
+          reject(error);
         }
       );
     });
   });
 };
 
-// 标记今日奖励已领取
-export const markDailyRewardClaimed = () => {
-  const today = new Date().toISOString();
-  // 实际实现中会更新数据库中的某个字段
-  console.log(`Daily reward marked as claimed for: ${today}`);
+// 检查金币是否足够
+export const hasEnoughCoins = async (amount: number): Promise<boolean> => {
+  try {
+    const coins = await getCoins();
+    return coins >= amount;
+  } catch (error) {
+    console.error('Error checking coin balance:', error);
+    return false;
+  }
 };

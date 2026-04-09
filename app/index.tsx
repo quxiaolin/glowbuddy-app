@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, StatusBar, Alert, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, StatusBar, Alert, Dimensions, Linking } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withRepeat, withTiming } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { initDatabase, getPetStatus, updatePetStatus, addCoins, getCoins } from '../utils/database';
+import { initDatabase, getPetStatus, updatePetStatus, addCoins, getCoins, updateHunger, hasEnoughCoins } from '../utils/database';
+import { safeCoinOperation, safeHungerOperation, limitChecker, handleAppError, ErrorType, AppError } from '../utils/errorHandler';
 
 // 宠物状态类型
 type PetStatus = {
@@ -43,6 +44,7 @@ export default function HomeScreen() {
     lastFed: null
   });
   
+  const [loading, setLoading] = useState(true);
   const scale = useSharedValue(1);
   const rotation = useSharedValue(0);
   const opacity = useSharedValue(1);
@@ -56,6 +58,9 @@ export default function HomeScreen() {
   // 加载初始数据
   const loadInitialData = async () => {
     try {
+      setLoading(true);
+      await initDatabase(); // 确保数据库初始化
+      
       const status = await getPetStatus();
       if (status) {
         setPetStatus({
@@ -67,83 +72,124 @@ export default function HomeScreen() {
       }
     } catch (error) {
       console.error('Error loading pet status:', error);
+      handleAppError(error, 'HomeScreen.loadInitialData');
+      
+      // 使用默认值
+      setPetStatus({
+        mood: 'neutral',
+        hunger: 50,
+        coins: 10,
+        lastFed: null
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   // 检查每日奖励
-  const checkDailyReward = () => {
-    const today = new Date().toDateString();
-    const lastRewardDate = localStorage.getItem('lastRewardDate');
-    
-    if (lastRewardDate !== today) {
-      // 发放每日奖励
-      addCoins(10);
-      setPetStatus(prev => ({
-        ...prev,
-        coins: prev.coins + 10
-      }));
-      localStorage.setItem('lastRewardDate', today);
-      Alert.alert('每日奖励', '获得10枚金币！');
+  const checkDailyReward = async () => {
+    try {
+      const today = new Date().toDateString();
+      const lastRewardDate = localStorage.getItem('lastRewardDate');
+      
+      if (lastRewardDate !== today) {
+        // 发放每日奖励
+        await addCoins(10);
+        setPetStatus(prev => ({
+          ...prev,
+          coins: safeCoinOperation.add(prev.coins, 10)
+        }));
+        localStorage.setItem('lastRewardDate', today);
+        Alert.alert('每日奖励', '获得10枚金币！');
+      }
+    } catch (error) {
+      console.error('Error claiming daily reward:', error);
+      handleAppError(error, 'HomeScreen.checkDailyReward');
     }
   };
 
   // 单击宠物触发弹跳动画和震动
-  const handlePress = () => {
-    // 触发震动反馈
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
-    // 弹跳动画
-    scale.value = withSpring(1.2, {}, (finished) => {
-      if (finished) {
-        scale.value = withSpring(1);
-      }
-    });
-    
-    // 旋转动画
-    rotation.value = withRepeat(withSpring(5, {}, (finished) => {
-      if (finished) {
-        rotation.value = withSpring(0);
-      }
-    }), 1);
-    
-    // 增加金币
-    addCoins(1);
-    setPetStatus(prev => ({
-      ...prev,
-      coins: prev.coins + 1
-    }));
+  const handlePress = async () => {
+    try {
+      // 触发震动反馈
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      
+      // 弹跳动画
+      scale.value = withSpring(1.2, {}, (finished) => {
+        if (finished) {
+          scale.value = withSpring(1);
+        }
+      });
+      
+      // 旋转动画
+      rotation.value = withRepeat(withSpring(5, {}, (finished) => {
+        if (finished) {
+          rotation.value = withSpring(0);
+        }
+      }), 1);
+      
+      // 增加金币
+      await addCoins(1);
+      setPetStatus(prev => ({
+        ...prev,
+        coins: safeCoinOperation.add(prev.coins, 1)
+      }));
+    } catch (error) {
+      console.error('Error handling press:', error);
+      handleAppError(error, 'HomeScreen.handlePress');
+      Alert.alert('错误', '操作失败，请重试');
+    }
   };
 
   // 长按喂食
-  const handleLongPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
-    setPetStatus(prev => {
-      const newHunger = Math.max(0, prev.hunger - 20);
-      const newMood = newHunger <= 30 ? 'happy' : newHunger <= 70 ? 'neutral' : 'sad';
+  const handleLongPress = async () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       
-      // 更新数据库
-      updatePetStatus({
-        mood: newMood,
-        hunger: newHunger,
-        coins: prev.coins,
-        lastFed: new Date()
+      // 检查是否有足够的饱食度减少空间
+      if (petStatus.hunger <= 0) {
+        Alert.alert('提示', '宠物已经很饱了，不能再喂食了！');
+        return;
+      }
+      
+      setPetStatus(prev => {
+        try {
+          // 减少饥饿值（增加饱食度）
+          const newHunger = safeHungerOperation.update(prev.hunger, -20);
+          const newMood = newHunger <= 30 ? 'happy' : newHunger <= 70 ? 'neutral' : 'sad';
+          
+          // 更新数据库
+          updatePetStatus({
+            mood: newMood,
+            hunger: newHunger,
+            coins: prev.coins,
+            lastFed: new Date()
+          });
+          
+          return {
+            ...prev,
+            hunger: newHunger,
+            mood: newMood,
+            lastFed: new Date()
+          };
+        } catch (error) {
+          console.error('Error updating pet status:', error);
+          handleAppError(error, 'HomeScreen.handleLongPress');
+          return prev; // 返回原始状态
+        }
       });
       
-      return {
-        ...prev,
-        hunger: newHunger,
-        mood: newMood,
-        lastFed: new Date()
-      };
-    });
-    
-    // 动画反馈
-    opacity.value = withRepeat(withTiming(0.7, { duration: 200 }, (finished) => {
-      if (finished) {
-        opacity.value = withTiming(1, { duration: 200 });
-      }
-    }), 1);
+      // 动画反馈
+      opacity.value = withRepeat(withTiming(0.7, { duration: 200 }, (finished) => {
+        if (finished) {
+          opacity.value = withTiming(1, { duration: 200 });
+        }
+      }), 1);
+    } catch (error) {
+      console.error('Error handling long press:', error);
+      handleAppError(error, 'HomeScreen.handleLongPress');
+      Alert.alert('错误', '喂食失败，请重试');
+    }
   };
 
   // 获取心情对应的颜色
@@ -166,6 +212,16 @@ export default function HomeScreen() {
       opacity: opacity.value
     };
   });
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: getMoodColor() }]}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>正在加载宠物...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: getMoodColor() }]}>
@@ -220,7 +276,7 @@ export default function HomeScreen() {
             style={[
               styles.progressFill, 
               { 
-                width: `${petStatus.hunger}%`,
+                width: `${100 - petStatus.hunger}%`,
                 backgroundColor: petStatus.hunger > 70 ? '#FF6B6B' : petStatus.hunger > 30 ? '#4ECDC4' : '#45B7D1'
               }
             ]} 
@@ -240,6 +296,16 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   header: {
     flexDirection: 'row',

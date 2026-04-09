@@ -15,7 +15,15 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { addChatMessage, getChatHistory } from '../utils/database';
-import { getAIResponse } from '../utils/openai';
+import { 
+  getAIResponse, 
+  hasReachedDailyLimit, 
+  incrementChatCount, 
+  getRemainingChats, 
+  resetDailyChatCountIfNeeded,
+  awardChatBonus,
+  isApiKeyConfigured
+} from '../utils/openai';
 
 // 消息类型
 type Message = {
@@ -28,15 +36,17 @@ type Message = {
 export default function ChatScreen() {
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
-  const [dailyCount, setDailyCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
   const [remainingChats, setRemainingChats] = useState(30);
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiConfigured, setApiConfigured] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
-  // 加载历史消息
+  // 检查 API 配置和初始化
   useEffect(() => {
+    checkApiConfiguration();
     loadChatHistory();
-    initializeChatLimit();
+    resetDailyChatCountIfNeeded(); // 检查是否需要重置每日计数
+    updateChatCount(); // 更新剩余对话次数
   }, []);
 
   // 滚动到底部
@@ -48,18 +58,24 @@ export default function ChatScreen() {
     }
   }, [messages]);
 
-  // 初始化聊天限制
-  const initializeChatLimit = () => {
-    // 实际应用中，这里会检查数据库中今天的聊天次数
-    // 现在我们使用模拟数据
-    const today = new Date().toDateString();
-    const storedData = localStorage.getItem(`chatLimit_${today}`);
-    if (storedData) {
-      const { count } = JSON.parse(storedData);
-      setRemainingChats(30 - count);
-    } else {
-      setRemainingChats(30);
+  // 检查 API 配置
+  const checkApiConfiguration = async () => {
+    const configured = isApiKeyConfigured();
+    setApiConfigured(configured);
+    
+    if (!configured) {
+      Alert.alert(
+        'API 配置提醒', 
+        'OpenAI API 密钥未配置，将使用模拟响应。请在 .env 文件中设置 EXPO_PUBLIC_OPENAI_API_KEY',
+        [{ text: '确定' }]
+      );
     }
+  };
+
+  // 更新剩余对话次数
+  const updateChatCount = () => {
+    const remaining = getRemainingChats();
+    setRemainingChats(remaining);
   };
 
   const loadChatHistory = async () => {
@@ -82,7 +98,7 @@ export default function ChatScreen() {
   const sendMessage = async () => {
     if (inputText.trim() === '') return;
 
-    if (remainingChats <= 0) {
+    if (hasReachedDailyLimit()) {
       Alert.alert('今日对话次数已达上限', '每天最多可以和宠物对话30次，明天再来吧！');
       return;
     }
@@ -96,13 +112,17 @@ export default function ChatScreen() {
     };
 
     setMessages(prev => [...prev, userMessage]);
-    setRemainingChats(prev => prev - 1);
     setInputText('');
     setIsLoading(true);
 
     try {
       // 保存用户消息到数据库
       await addChatMessage(inputText, 'user');
+
+      // 增加对话计数
+      const newCount = incrementChatCount();
+      const newRemaining = 30 - newCount;
+      setRemainingChats(newRemaining);
 
       // 获取 AI 回复
       const aiResponse = await getAIResponse(inputText);
@@ -120,9 +140,11 @@ export default function ChatScreen() {
       // 保存 AI 消息到数据库
       await addChatMessage(aiResponse, 'ai');
       
-      // 增加金币
-      // 在实际应用中，这里会调用增加金币的函数
-      Alert.alert('奖励', '获得2枚金币！');
+      // 给予对话奖励
+      const bonusAwarded = await awardChatBonus();
+      if (bonusAwarded) {
+        Alert.alert('奖励', '获得2枚金币！');
+      }
     } catch (error) {
       console.error('Error getting AI response:', error);
       const errorMessage: Message = {
@@ -195,14 +217,14 @@ export default function ChatScreen() {
             style={styles.textInput}
             value={inputText}
             onChangeText={setInputText}
-            placeholder="和你的宠物聊聊天..."
+            placeholder={apiConfigured ? "和你的宠物聊聊天..." : "API未配置，将使用模拟响应"}
             multiline
             maxLength={200}
           />
           <TouchableOpacity
             style={[styles.sendButton, (inputText.trim() === '' || isLoading) && styles.sendButtonDisabled]}
             onPress={sendMessage}
-            disabled={inputText.trim() === '' || isLoading}
+            disabled={inputText.trim() === '' || isLoading || hasReachedDailyLimit()}
           >
             {isLoading ? (
               <Ionicons name="time" size={24} color="gray" />
@@ -212,6 +234,13 @@ export default function ChatScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+      
+      {/* API 配置提醒 */}
+      {!apiConfigured && (
+        <View style={styles.apiAlert}>
+          <Text style={styles.apiAlertText}>⚠️ OpenAI API 未配置</Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -316,5 +345,16 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: '#B0B0B0',
+  },
+  apiAlert: {
+    backgroundColor: '#FFF3CD',
+    borderColor: '#FFEAA7',
+    borderWidth: 1,
+    padding: 10,
+    alignItems: 'center',
+  },
+  apiAlertText: {
+    color: '#856404',
+    fontSize: 12,
   },
 });
