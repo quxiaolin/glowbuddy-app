@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GlowBuddy - 电子宠物应用</title>
+    <title>GlowBuddy - 3D电子宠物应用</title>
     <style>
         * {
             margin: 0;
@@ -25,33 +25,39 @@
             margin: 0 auto;
             width: 100%;
             min-height: 100vh;
-            background: #FFA500; /* 默认心情颜色 - 中性 */
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); /* 默认开心颜色 - 金色 */
             transition: background 0.8s ease;
             position: relative;
             overflow: hidden;
         }
 
         /* 背景特效 */
-        .background-effect {
+        .background-effects {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: 0;
+            z-index: 1;
         }
 
         .bubble {
             position: absolute;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            animation: float 8s ease-in-out infinite;
+            background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,215,0,0.3) 100%);
+            animation: float 6s ease-in-out infinite;
         }
 
         @keyframes float {
-            0%, 100% { transform: translateY(0) translateX(0) scale(1); }
-            50% { transform: translateY(-20px) translateX(10px) scale(1.1); }
+            0%, 100% { 
+                transform: translateY(0) translateX(0) scale(1);
+                opacity: 0.7;
+            }
+            50% { 
+                transform: translateY(-20px) translateX(10px) scale(1.1);
+                opacity: 0.9;
+            }
         }
 
         /* 头部导航 */
@@ -72,18 +78,14 @@
             color: white;
             cursor: pointer;
             padding: 5px;
-            z-index: 10;
-            position: relative;
         }
 
         .coins-container {
             display: flex;
             align-items: center;
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.3);
             padding: 6px 12px;
             border-radius: 20px;
-            z-index: 10;
-            position: relative;
         }
 
         .coins-text {
@@ -112,104 +114,174 @@
             position: relative;
         }
 
-        .pet {
+        /* 3D 宠物容器 */
+        .pet-3d-container {
             width: 220px;
             height: 220px;
+            perspective: 1000px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .pet-3d {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease;
+        }
+
+        .pet-3d:hover {
+            transform: rotateX(5deg) rotateY(5deg);
+        }
+
+        /* 宠物主体 - 3D 球体效果 */
+        .pet-body {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            left: 35px;
+            top: 35px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #FFD700, #FFA500, #FF8C00);
+            box-shadow: 
+                0 0 30px rgba(255, 215, 0, 0.6),
+                inset 0 0 30px rgba(255, 255, 255, 0.3);
             display: flex;
             justify-content: center;
             align-items: center;
-            border-radius: 110px;
-            background: rgba(255, 255, 255, 0.3);
-            margin-bottom: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            transform: translateZ(20px);
+            animation: breathe3d 3s ease-in-out infinite;
+        }
+
+        @keyframes breathe3d {
+            0%, 100% { 
+                transform: translateZ(20px) scale3d(1, 1, 1);
+                box-shadow: 
+                    0 0 30px rgba(255, 215, 0, 0.6),
+                    inset 0 0 30px rgba(255, 255, 255, 0.3);
+            }
+            50% { 
+                transform: translateZ(25px) scale3d(1.05, 1.02, 1.05);
+                box-shadow: 
+                    0 0 40px rgba(255, 215, 0, 0.8),
+                    inset 0 0 40px rgba(255, 255, 255, 0.4);
+            }
+        }
+
+        /* 宠物脸部 */
+        .pet-face {
             position: relative;
-            overflow: hidden;
-            box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
-            z-index: 5;
+            width: 100px;
+            height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
-        /* 光晕效果 */
-        .pet::before {
-            content: '';
+        /* 眼睛 */
+        .pet-eye {
             position: absolute;
-            top: -5px;
-            left: -5px;
-            right: -5px;
-            bottom: -5px;
+            width: 15px;
+            height: 15px;
+            background: #333;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 70%);
-            z-index: -1;
-            opacity: 0;
-            transition: opacity 0.5s ease;
+            top: 25px;
         }
 
-        .pet:hover::before {
-            opacity: 1;
+        .eye-left {
+            left: 25px;
+            animation: blink 4s ease-in-out infinite;
         }
 
-        /* SVG 宠物样式 */
-        .pet-svg {
-            width: 180px;
-            height: 180px;
-            transition: all 0.3s ease;
-        }
-
-        /* 宠物动画 */
-        @keyframes breathe {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.03); }
+        .eye-right {
+            right: 25px;
+            animation: blink 4s ease-in-out infinite 0.5s;
         }
 
         @keyframes blink {
-            0%, 40%, 80%, 100% { transform: scaleY(1); }
-            20%, 60% { transform: scaleY(0.1); }
+            0%, 40%, 80%, 100% { 
+                transform: scaleY(1);
+            }
+            20%, 60% { 
+                transform: scaleY(0.1);
+            }
         }
 
-        @keyframes happyBounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
+        /* 嘴巴 */
+        .pet-mouth {
+            position: absolute;
+            width: 30px;
+            height: 10px;
+            background: #333;
+            border-radius: 0 0 15px 15px;
+            top: 50px;
+            animation: smile 5s ease-in-out infinite;
         }
 
-        @keyframes sadWobble {
-            0%, 100% { transform: rotate(0deg); }
-            25% { transform: rotate(-3deg); }
-            75% { transform: rotate(3deg); }
+        @keyframes smile {
+            0%, 45%, 55%, 100% { 
+                border-radius: 0 0 15px 15px;
+            }
+            50% { 
+                border-radius: 15px 15px 15px 15px;
+            }
         }
 
-        @keyframes excitedJump {
-            0%, 100% { transform: translateY(0); }
-            25% { transform: translateY(-20px) scale(1.1); }
-            50% { transform: translateY(0) scale(1.05); }
-            75% { transform: translateY(-10px); }
+        /* 耳朵 */
+        .pet-ear {
+            position: absolute;
+            width: 25px;
+            height: 40px;
+            background: radial-gradient(circle at 30% 30%, #FFD700, #FF8C00);
+            border-radius: 50%;
+            top: -10px;
+            transform-origin: bottom center;
         }
 
-        .pet-animated {
-            animation: breathe 4s ease-in-out infinite;
+        .ear-left {
+            left: 30px;
+            transform: rotate(-20deg);
+            animation: earMove 4s ease-in-out infinite;
         }
 
-        .eye-left, .eye-right {
-            animation: blink 5s ease-in-out infinite;
+        .ear-right {
+            right: 30px;
+            transform: rotate(20deg);
+            animation: earMove 4s ease-in-out infinite 0.5s;
         }
 
-        .happy-animation {
-            animation: happyBounce 1.5s ease-in-out infinite;
+        @keyframes earMove {
+            0%, 100% { transform: rotate(-20deg); }
+            50% { transform: rotate(-15deg); }
         }
 
-        .sad-animation {
-            animation: sadWobble 3s ease-in-out infinite;
+        /* 尾巴 */
+        .pet-tail {
+            position: absolute;
+            width: 30px;
+            height: 10px;
+            background: radial-gradient(circle at 30% 30%, #FFD700, #FF8C00);
+            border-radius: 5px;
+            bottom: 30px;
+            right: 10px;
+            transform-origin: left center;
+            animation: tailWag 3s ease-in-out infinite;
         }
 
-        .excited-animation {
-            animation: excitedJump 0.8s ease-out;
+        @keyframes tailWag {
+            0%, 100% { transform: rotate(-20deg); }
+            50% { transform: rotate(20deg); }
         }
 
+        /* 心情指示器 */
         .mood-indicator {
             background: rgba(255, 255, 255, 0.3);
             padding: 8px 15px;
             border-radius: 20px;
-            z-index: 5;
-            position: relative;
+            margin-top: 10px;
         }
 
         .mood-text {
@@ -247,9 +319,9 @@
         .progress-fill {
             height: 100%;
             width: 50%; /* 示例饱食度 */
-            background: #4ECDC4;
+            background: linear-gradient(90deg, #4ECDC4, #44A08D);
             border-radius: 10px;
-            transition: width 0.5s ease, background-color 0.3s ease;
+            transition: width 0.5s ease, background 0.3s ease;
             position: relative;
             overflow: hidden;
         }
@@ -316,24 +388,47 @@
         }
 
         /* 心情颜色类 */
-        .happy { background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%); } /* 金色 - 开心 */
-        .neutral { background: linear-gradient(135deg, #ffa500 0%, #ff7e00 100%); } /* 橙色 - 一般 */
-        .sad { background: linear-gradient(135deg, #1e90ff 0%, #0066cc 100%); } /* 蓝色 - 难过 */
+        .container.happy { 
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); /* 金色 - 开心 */
+        }
+        .container.neutral { 
+            background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%); /* 橙色 - 一般 */
+        }
+        .container.sad { 
+            background: linear-gradient(135deg, #1E90FF 0%, #4169E1 100%); /* 蓝色 - 难过 */
+        }
 
         /* 点击动画 */
         .pet-clicked {
-            transform: scale(1.15);
-            box-shadow: 0 0 50px rgba(255, 255, 255, 0.6);
+            animation: petClicked 0.3s ease;
+        }
+
+        @keyframes petClicked {
+            0% { transform: scale3d(1, 1, 1); }
+            50% { transform: scale3d(1.1, 1.05, 1.1); }
+            100% { transform: scale3d(1, 1, 1); }
         }
 
         /* 粒子效果 */
         .particle {
             position: absolute;
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             pointer-events: none;
             z-index: 20;
+            animation: particleFloat 1s ease-out forwards;
+        }
+
+        @keyframes particleFloat {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty)) scale(0);
+                opacity: 0;
+            }
         }
 
         /* 响应式设计 */
@@ -342,23 +437,25 @@
                 max-width: 100%;
             }
             
-            .pet {
+            .pet-3d-container {
                 width: 180px;
                 height: 180px;
             }
             
-            .pet-svg {
-                width: 150px;
-                height: 150px;
+            .pet-body {
+                width: 130px;
+                height: 130px;
+                left: 25px;
+                top: 25px;
             }
         }
     </style>
 </head>
 <body>
+    <!-- 背景特效 -->
+    <div class="background-effects" id="backgroundEffects"></div>
+    
     <div class="container neutral" id="mainContainer">
-        <!-- 背景特效 -->
-        <div class="background-effect" id="backgroundEffects"></div>
-        
         <!-- 头部导航 -->
         <div class="header">
             <button class="nav-button" onclick="goToChat()">💬</button>
@@ -372,68 +469,19 @@
         <!-- 宠物区域 -->
         <div class="pet-area">
             <div class="pet-container">
-                <div class="pet pet-animated" id="petElement" onclick="petClick()">
-                    <svg class="pet-svg" viewBox="0 0 200 200" id="petSvg">
-                        <!-- 宠物身体 -->
-                        <defs>
-                            <radialGradient id="bodyGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                                <stop offset="0%" stop-color="white" stop-opacity="0.9"/>
-                                <stop offset="100%" stop-color="white" stop-opacity="0.6"/>
-                            </radialGradient>
-                            
-                            <filter id="glow">
-                                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                                <feMerge> 
-                                    <feMergeNode in="coloredBlur"/>
-                                    <feMergeNode in="SourceGraphic"/>
-                                </feMerge>
-                            </filter>
-                        </defs>
-                        
-                        <circle cx="100" cy="100" r="70" fill="url(#bodyGradient)" filter="url(#glow)" id="petBody"/>
-                        
-                        <!-- 宠物眼睛 -->
-                        <g id="eyesGroup">
-                            <circle class="eye-left" cx="70" cy="85" r="10" fill="#333" filter="url(#glow)" id="eyeLeft">
-                                <animate attributeName="cy" values="85;85;84;85;85" dur="4s" repeatCount="indefinite"/>
-                            </circle>
-                            <circle class="eye-right" cx="130" cy="85" r="10" fill="#333" filter="url(#glow)" id="eyeRight">
-                                <animate attributeName="cy" values="85;85;84;85;85" dur="4s" repeatCount="indefinite"/>
-                            </circle>
-                            
-                            <!-- 眼睛高光 -->
-                            <circle cx="73" cy="83" r="3" fill="white" opacity="0.8"/>
-                            <circle cx="133" cy="83" r="3" fill="white" opacity="0.8"/>
-                        </g>
-                        
-                        <!-- 宠物嘴巴 -->
-                        <path d="M 80 120 Q 100 140 120 120" stroke="#333" stroke-width="4" fill="none" id="mouth" filter="url(#glow)">
-                            <animate attributeName="d" values="M 80 120 Q 100 140 120 120; M 80 125 Q 100 135 120 125; M 80 120 Q 100 140 120 120" dur="5s" repeatCount="indefinite"/>
-                        </path>
-                        
-                        <!-- 宠物耳朵 -->
-                        <ellipse cx="50" cy="60" rx="15" ry="25" fill="url(#bodyGradient)" filter="url(#glow)" id="earLeft">
-                            <animate attributeName="ry" values="25;27;25;24;25" dur="6s" repeatCount="indefinite"/>
-                        </ellipse>
-                        <ellipse cx="150" cy="60" rx="15" ry="25" fill="url(#bodyGradient)" filter="url(#glow)" id="earRight">
-                            <animate attributeName="ry" values="25;27;25;24;25" dur="6s" repeatCount="indefinite"/>
-                        </ellipse>
-                        
-                        <!-- 宠物尾巴 -->
-                        <path d="M 165 110 Q 185 100 180 80" stroke="url(#bodyGradient)" stroke-width="10" fill="none" id="tail" filter="url(#glow)">
-                            <animate attributeName="d" values="M 165 110 Q 185 100 180 80; M 165 115 Q 185 105 180 85; M 165 110 Q 185 100 180 80" dur="4s" repeatCount="indefinite"/>
-                        </path>
-                        
-                        <!-- 宠物装饰 - 项链 -->
-                        <ellipse cx="100" cy="130" rx="40" ry="8" fill="none" stroke="#FFD700" stroke-width="3" stroke-dasharray="5,5" id="collar">
-                            <animate attributeName="stroke-dashoffset" values="0;-10" dur="2s" repeatCount="indefinite"/>
-                        </ellipse>
-                        
-                        <!-- 宠物装饰 - 项圈铃铛 -->
-                        <circle cx="100" cy="140" r="6" fill="#FFD700" id="bell">
-                            <animate attributeName="cx" values="100;102;100;98;100" dur="3s" repeatCount="indefinite"/>
-                        </circle>
-                    </svg>
+                <div class="pet-3d-container" id="pet3dContainer" onclick="petClick()" onmousedown="startInteraction(event)" ontouchstart="startInteraction(event)">
+                    <div class="pet-3d" id="pet3d">
+                        <div class="pet-body" id="petBody">
+                            <div class="pet-face">
+                                <div class="pet-eye eye-left" id="eyeLeft"></div>
+                                <div class="pet-eye eye-right" id="eyeRight"></div>
+                                <div class="pet-mouth" id="mouth"></div>
+                            </div>
+                            <div class="pet-ear ear-left" id="earLeft"></div>
+                            <div class="pet-ear ear-right" id="earRight"></div>
+                            <div class="pet-tail" id="tail"></div>
+                        </div>
+                    </div>
                 </div>
                 <div class="mood-indicator">
                     <span class="mood-text" id="moodText">一般</span>
@@ -477,52 +525,121 @@
         let coins = 50;
         let hunger = 50; // 0-100
         let mood = 'neutral'; // happy, neutral, sad
-        let isFeeding = false;
-        let feedTimer = null;
-        let particleId = 0;
+        let isInteracting = false;
+        let interactionTimer = null;
+        let particles = [];
 
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             createBackgroundEffects();
             updateHungerDisplay();
             
-            // 长按喂食功能
-            const petElement = document.getElementById('petElement');
-            
-            petElement.addEventListener('mousedown', startFeeding);
-            petElement.addEventListener('mouseup', stopFeeding);
-            petElement.addEventListener('mouseleave', stopFeeding);
-            
-            // 触摸设备支持
-            petElement.addEventListener('touchstart', function(e) {
-                startFeeding();
-                e.preventDefault();
-            });
-            
-            petElement.addEventListener('touchend', function(e) {
-                stopFeeding();
-                e.preventDefault();
+            // 添加鼠标移动事件来增加3D效果
+            document.addEventListener('mousemove', function(e) {
+                if (!isInteracting) {
+                    const pet3d = document.getElementById('pet3d');
+                    const rect = pet3d.getBoundingClientRect();
+                    const centerX = rect.left + rect.width / 2;
+                    const centerY = rect.top + rect.height / 2;
+                    
+                    const rotateY = (e.clientX - centerX) / 20;
+                    const rotateX = (centerY - e.clientY) / 20;
+                    
+                    pet3d.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                }
             });
         });
 
         // 创建背景特效
         function createBackgroundEffects() {
             const container = document.getElementById('backgroundEffects');
-            for (let i = 0; i < 15; i++) {
+            for (let i = 0; i < 20; i++) {
                 const bubble = document.createElement('div');
                 bubble.className = 'bubble';
                 
                 // 随机大小和位置
-                const size = Math.random() * 30 + 10;
+                const size = Math.random() * 40 + 10;
+                const left = Math.random() * 100;
+                const top = Math.random() * 100;
+                const delay = Math.random() * 6;
+                
                 bubble.style.width = size + 'px';
                 bubble.style.height = size + 'px';
-                bubble.style.left = Math.random() * 100 + '%';
-                bubble.style.top = Math.random() * 100 + '%';
-                
-                // 随机动画延迟
-                bubble.style.animationDelay = Math.random() * 5 + 's';
+                bubble.style.left = left + '%';
+                bubble.style.top = top + '%';
+                bubble.style.animationDelay = delay + 's';
                 
                 container.appendChild(bubble);
+            }
+        }
+
+        // 宠物点击事件
+        function petClick() {
+            // 增加金币
+            coins += 1;
+            document.getElementById('coinsDisplay').textContent = coins;
+            
+            // 创建粒子效果
+            createParticles();
+            
+            // 添加点击动画
+            const pet3d = document.getElementById('pet3d');
+            pet3d.classList.add('pet-clicked');
+            setTimeout(() => {
+                pet3d.classList.remove('pet-clicked');
+            }, 300);
+            
+            // 宠物表情变化
+            const mouth = document.getElementById('mouth');
+            const originalStyle = mouth.style.borderRadius;
+            mouth.style.borderRadius = '15px 15px 15px 15px'; // 瞬间开心
+            setTimeout(() => {
+                mouth.style.borderRadius = originalStyle;
+            }, 300);
+            
+            // 更新心情
+            updateMoodBasedOnHunger();
+        }
+
+        // 开始交互（点击或长按）
+        function startInteraction(event) {
+            isInteracting = true;
+            
+            // 开始喂食计时器
+            interactionTimer = setTimeout(function() {
+                feedPet();
+            }, 1000); // 长按1秒后喂食
+        }
+
+        // 停止交互
+        function stopInteraction(event) {
+            isInteracting = false;
+            
+            if (interactionTimer) {
+                clearTimeout(interactionTimer);
+                interactionTimer = null;
+            }
+        }
+
+        // 喂食宠物
+        function feedPet() {
+            if (hunger > 0) {
+                hunger = Math.max(0, hunger - 20);
+                updateHungerDisplay();
+                
+                // 创建绿色粒子效果（食物）
+                createParticles('#4CAF50');
+                
+                // 宠物反应
+                const pet3d = document.getElementById('pet3d');
+                pet3d.style.animation = 'none';
+                setTimeout(() => {
+                    pet3d.style.animation = 'breathe3d 3s ease-in-out infinite';
+                }, 10);
+                
+                alert('宠物吃饱了！');
+            } else {
+                alert('宠物已经很饱了！');
             }
         }
 
@@ -533,13 +650,6 @@
             const moodText = document.getElementById('moodText');
             const mainContainer = document.getElementById('mainContainer');
             const petBody = document.getElementById('petBody');
-            const mouth = document.getElementById('mouth');
-            const tail = document.getElementById('tail');
-            const earLeft = document.getElementById('earLeft');
-            const earRight = document.getElementById('earRight');
-            const collar = document.getElementById('collar');
-            const bell = document.getElementById('bell');
-            const eyesGroup = document.getElementById('eyesGroup');
             
             hungerBar.style.width = (100 - hunger) + '%';
             hungerPercent.textContent = (100 - hunger) + '%';
@@ -550,171 +660,79 @@
                 moodText.textContent = '开心';
                 
                 // 开心时的宠物外观
-                petBody.setAttribute('fill', 'url(#bodyGradient)');
-                mouth.setAttribute('d', 'M 80 130 Q 100 150 120 130'); // 笑脸
-                tail.setAttribute('stroke', '#FFD700');
-                earLeft.setAttribute('fill', 'url(#bodyGradient)');
-                earRight.setAttribute('fill', 'url(#bodyGradient)');
-                collar.setAttribute('stroke', '#FFD700');
-                bell.setAttribute('fill', '#FFD700');
+                petBody.style.background = 'radial-gradient(circle at 30% 30%, #FFD700, #FFA500, #FF8C00)';
+                document.getElementById('mainContainer').className = 'container happy';
                 
-                // 添加动画类
-                document.getElementById('petSvg').classList.add('happy-animation');
-                document.getElementById('petSvg').classList.remove('sad-animation');
-                
-                // 眼睛更亮
-                document.querySelectorAll('#eyeLeft, #eyeRight').forEach(eye => {
-                    eye.setAttribute('fill', '#222');
-                });
+                // 更快的动画
+                petBody.style.animation = 'breathe3d 2s ease-in-out infinite';
             } else if (hunger <= 70) {
                 mood = 'neutral';
                 moodText.textContent = '一般';
                 
                 // 一般时的宠物外观
-                petBody.setAttribute('fill', 'url(#bodyGradient)');
-                mouth.setAttribute('d', 'M 80 125 Q 100 135 120 125'); // 中性脸
-                tail.setAttribute('stroke', 'white');
-                earLeft.setAttribute('fill', 'url(#bodyGradient)');
-                earRight.setAttribute('fill', 'url(#bodyGradient)');
-                collar.setAttribute('stroke', '#FFD700');
-                bell.setAttribute('fill', '#FFD700');
+                petBody.style.background = 'radial-gradient(circle at 30% 30%, #FFA500, #FF8C00, #FF6B35)';
+                document.getElementById('mainContainer').className = 'container neutral';
                 
-                // 移除动画类
-                document.getElementById('petSvg').classList.remove('happy-animation', 'sad-animation');
-                
-                // 眼睛正常
-                document.querySelectorAll('#eyeLeft, #eyeRight').forEach(eye => {
-                    eye.setAttribute('fill', '#333');
-                });
+                // 标准动画
+                petBody.style.animation = 'breathe3d 3s ease-in-out infinite';
             } else {
                 mood = 'sad';
                 moodText.textContent = '难过';
                 
                 // 难过时的宠物外观
-                petBody.setAttribute('fill', 'url(#bodyGradient)');
-                mouth.setAttribute('d', 'M 80 120 Q 100 110 120 120'); // 哭脸
-                tail.setAttribute('stroke', '#1E90FF');
-                earLeft.setAttribute('fill', 'url(#bodyGradient)');
-                earRight.setAttribute('fill', 'url(#bodyGradient)');
-                collar.setAttribute('stroke', '#1E90FF');
-                bell.setAttribute('fill', '#1E90FF');
+                petBody.style.background = 'radial-gradient(circle at 30% 30%, #1E90FF, #4169E1, #00008B)';
+                document.getElementById('mainContainer').className = 'container sad';
                 
-                // 添加动画类
-                document.getElementById('petSvg').classList.add('sad-animation');
-                document.getElementById('petSvg').classList.remove('happy-animation');
-                
-                // 眼睛暗淡
-                document.querySelectorAll('#eyeLeft, #eyeRight').forEach(eye => {
-                    eye.setAttribute('fill', '#555');
-                });
+                // 更慢的动画
+                petBody.style.animation = 'breathe3d 4s ease-in-out infinite';
             }
-            
-            // 更新背景颜色
-            mainContainer.className = 'container ' + mood;
         }
 
         // 创建粒子效果
-        function createParticles(x, y, color = '#FFD700') {
-            for (let i = 0; i < 10; i++) {
+        function createParticles(color = '#FFD700') {
+            const petRect = document.getElementById('pet3dContainer').getBoundingClientRect();
+            const centerX = petRect.left + petRect.width / 2;
+            const centerY = petRect.top + petRect.height / 2;
+            
+            for (let i = 0; i < 15; i++) {
                 const particle = document.createElement('div');
                 particle.className = 'particle';
                 particle.style.backgroundColor = color;
-                particle.style.left = x + 'px';
-                particle.style.top = y + 'px';
-                particle.style.zIndex = '20';
+                particle.style.left = centerX + 'px';
+                particle.style.top = centerY + 'px';
+                
+                // 随机方向和距离
+                const angle = Math.random() * Math.PI * 2;
+                const distance = Math.random() * 50 + 30;
+                const tx = Math.cos(angle) * distance;
+                const ty = Math.sin(angle) * distance;
+                
+                particle.style.setProperty('--tx', tx + 'px');
+                particle.style.setProperty('--ty', ty + 'px');
                 
                 document.body.appendChild(particle);
                 
-                // 计算随机方向和距离
-                const angle = Math.random() * Math.PI * 2;
-                const distance = Math.random() * 50 + 30;
-                const duration = Math.random() * 1000 + 500;
-                
-                // 动画粒子
-                const startTime = Date.now();
-                const startLeft = x;
-                const startTop = y;
-                
-                function animateParticle() {
-                    const elapsed = Date.now() - startTime;
-                    const progress = Math.min(elapsed / duration, 1);
-                    
-                    if (progress < 1) {
-                        const currentLeft = startLeft + Math.cos(angle) * distance * progress;
-                        const currentTop = startTop + Math.sin(angle) * distance * progress;
-                        
-                        particle.style.left = currentLeft + 'px';
-                        particle.style.top = currentTop + 'px';
-                        particle.style.opacity = 1 - progress;
-                        
-                        requestAnimationFrame(animateParticle);
-                    } else {
-                        particle.remove();
-                    }
-                }
-                
-                animateParticle();
+                // 移除粒子
+                setTimeout(() => {
+                    particle.remove();
+                }, 1000);
             }
         }
 
-        // 宠物点击事件
-        function petClick() {
-            // 増加金币
-            coins += 1;
-            document.getElementById('coinsDisplay').textContent = coins;
-            
-            // 粒子效果
-            const rect = document.getElementById('petElement').getBoundingClientRect();
-            const x = rect.left + rect.width / 2;
-            const y = rect.top + rect.height / 2;
-            createParticles(x, y, '#FFD700');
-            
-            // 简单的点击动画
-            const petElement = document.getElementById('petElement');
-            petElement.classList.add('pet-clicked');
-            
-            // 添加兴奋动画
-            document.getElementById('petSvg').classList.add('excited-animation');
-            
-            setTimeout(() => {
-                petElement.classList.remove('pet-clicked');
-                document.getElementById('petSvg').classList.remove('excited-animation');
-            }, 800);
-            
-            // 宠物表情变化
-            const mouth = document.getElementById('mouth');
-            const originalPath = mouth.getAttribute('d');
-            mouth.setAttribute('d', 'M 80 135 Q 100 155 120 135'); // 瞬间开心
-            setTimeout(() => {
-                updateHungerDisplay(); // 恢复到正确的心情状态
-            }, 300);
-        }
-
-        // 开始喂食
-        function startFeeding() {
-            feedTimer = setTimeout(function() {
-                if (hunger > 0) {
-                    hunger = Math.max(0, hunger - 20);
-                    updateHungerDisplay();
-                    
-                    // 粒子效果
-                    const rect = document.getElementById('petElement').getBoundingClientRect();
-                    const x = rect.left + rect.width / 2;
-                    const y = rect.top + rect.height / 2;
-                    createParticles(x, y, '#4CAF50');
-                    
-                    alert('宠物吃饱了！');
-                } else {
-                    alert('宠物已经很饱了！');
-                }
-            }, 1000); // 1秒后喂食
-        }
-
-        // 停止喂食
-        function stopFeeding() {
-            if (feedTimer) {
-                clearTimeout(feedTimer);
-                feedTimer = null;
+        // 根据饱食度更新心情
+        function updateMoodBasedOnHunger() {
+            if (hunger <= 30) {
+                mood = 'happy';
+                document.getElementById('moodText').textContent = '开心';
+                document.getElementById('mainContainer').className = 'container happy';
+            } else if (hunger <= 70) {
+                mood = 'neutral';
+                document.getElementById('moodText').textContent = '一般';
+                document.getElementById('mainContainer').className = 'container neutral';
+            } else {
+                mood = 'sad';
+                document.getElementById('moodText').textContent = '难过';
+                document.getElementById('mainContainer').className = 'container sad';
             }
         }
 
@@ -726,6 +744,13 @@
         function goToChat() {
             window.location.href = 'chat.html';
         }
+
+        // 添加鼠标事件监听器
+        document.addEventListener('mouseup', stopInteraction);
+        document.addEventListener('mouseleave', stopInteraction);
+        document.addEventListener('touchend', function(e) {
+            stopInteraction(e);
+        });
     </script>
 </body>
 </html>
