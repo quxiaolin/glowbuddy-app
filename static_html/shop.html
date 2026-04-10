@@ -192,10 +192,10 @@
     <div class="container">
         <!-- 头部 -->
         <div class="header">
-            <button class="back-button">←</button>
+            <button class="back-button" onclick="goHome()">←</button>
             <div class="coins-container">
                 💰
-                <span class="coins-text">100</span>
+                <span class="coins-text" id="coinsDisplay">100</span>
             </div>
         </div>
         
@@ -212,7 +212,7 @@
                 <div class="item-description">增加20点饱食度</div>
                 <div class="item-footer">
                     <div class="item-type">类型: 食物</div>
-                    <button class="buy-button">购买</button>
+                    <button class="buy-button" onclick="buyItem(10, '美味食物')">购买</button>
                 </div>
             </div>
             
@@ -224,7 +224,7 @@
                 <div class="item-description">增加50点饱食度</div>
                 <div class="item-footer">
                     <div class="item-type">类型: 食物</div>
-                    <button class="buy-button">购买</button>
+                    <button class="buy-button" onclick="buyItem(20, '营养大餐')">购买</button>
                 </div>
             </div>
             
@@ -236,7 +236,7 @@
                 <div class="item-description">让宠物更开心</div>
                 <div class="item-footer">
                     <div class="item-type">类型: 玩具</div>
-                    <button class="buy-button">购买</button>
+                    <button class="buy-button" onclick="buyItem(15, '弹跳球')">购买</button>
                 </div>
             </div>
             
@@ -248,7 +248,7 @@
                 <div class="item-description">可爱的装饰品</div>
                 <div class="item-footer">
                     <div class="item-type">类型: 装饰</div>
-                    <button class="buy-button">购买</button>
+                    <button class="buy-button" onclick="buyItem(25, '小帽子')">购买</button>
                 </div>
             </div>
             
@@ -260,7 +260,7 @@
                 <div class="item-description">增加满额饱食度</div>
                 <div class="item-footer">
                     <div class="item-type">类型: 食物</div>
-                    <button class="buy-button">购买</button>
+                    <button class="buy-button" onclick="buyItem(30, '豪华套餐')">购买</button>
                 </div>
             </div>
             
@@ -272,7 +272,7 @@
                 <div class="item-description">最有趣的玩具</div>
                 <div class="item-footer">
                     <div class="item-type">类型: 玩具</div>
-                    <button class="buy-button">购买</button>
+                    <button class="buy-button" onclick="buyItem(35, '发光玩具')">购买</button>
                 </div>
             </div>
         </div>
@@ -296,33 +296,27 @@
 
     <script>
         // 模拟购买功能
-        document.addEventListener('DOMContentLoaded', function() {
-            const buyButtons = document.querySelectorAll('.buy-button');
-            const coinsText = document.querySelector('.coins-text');
-            
-            let coins = 100;
-            
-            buyButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    const priceText = this.closest('.item-card').querySelector('.item-price').textContent;
-                    const price = parseInt(priceText.match(/\d+/)[0]);
-                    
-                    if (coins >= price) {
-                        coins -= price;
-                        coinsText.textContent = coins;
-                        alert('购买成功！' + this.closest('.item-card').querySelector('.item-name').textContent);
-                        
-                        // 改变按钮为已拥有
-                        this.textContent = '已拥有';
-                        this.classList.remove('buy-button');
-                        this.classList.add('owned-tag');
-                        this.disabled = true;
-                    } else {
-                        alert('金币不足！');
-                    }
-                });
-            });
-        });
+        let coins = 100;
+        
+        function buyItem(price, itemName) {
+            if (coins >= price) {
+                coins -= price;
+                document.getElementById('coinsDisplay').textContent = coins;
+                alert('购买成功！' + itemName);
+                
+                // 改变按钮为已拥有
+                event.target.textContent = '已拥有';
+                event.target.classList.remove('buy-button');
+                event.target.classList.add('owned-tag');
+                event.target.disabled = true;
+            } else {
+                alert('金币不足！');
+            }
+        }
+        
+        function goHome() {
+            window.location.href = 'index.html';
+        }
     </script>
 </body>
 </html>
