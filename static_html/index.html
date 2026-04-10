@@ -92,20 +92,10 @@
             overflow: hidden;
         }
 
-        .pet-body {
+        /* SVG 宠物样式 */
+        .pet-svg {
             width: 150px;
             height: 150px;
-            border-radius: 75px;
-            background: rgba(255, 255, 255, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .pet-face {
-            font-size: 60px;
             transition: all 0.3s ease;
         }
 
@@ -120,12 +110,31 @@
             20%, 60% { transform: scaleY(0.1); }
         }
 
+        @keyframes happyBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes sadWobble {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-5deg); }
+            75% { transform: rotate(5deg); }
+        }
+
         .pet-animated {
             animation: breathe 3s ease-in-out infinite;
         }
 
-        .pet-face-animated {
+        .eye-left, .eye-right {
             animation: blink 4s ease-in-out infinite;
+        }
+
+        .happy-animation {
+            animation: happyBounce 2s ease-in-out infinite;
+        }
+
+        .sad-animation {
+            animation: sadWobble 4s ease-in-out infinite;
         }
 
         .mood-indicator {
@@ -233,11 +242,6 @@
                 width: 180px;
                 height: 180px;
             }
-            
-            .pet-body {
-                width: 130px;
-                height: 130px;
-            }
         }
     </style>
 </head>
@@ -257,9 +261,24 @@
         <div class="pet-area">
             <div class="pet-container">
                 <div class="pet pet-animated" id="petElement" onclick="petClick()">
-                    <div class="pet-body">
-                        <div class="pet-face pet-face-animated" id="petFace">😊</div>
-                    </div>
+                    <svg class="pet-svg" viewBox="0 0 100 100" id="petSvg">
+                        <!-- 宠物身体 -->
+                        <circle cx="50" cy="50" r="35" fill="white" fill-opacity="0.7" id="petBody"/>
+                        
+                        <!-- 宠物眼睛 -->
+                        <circle class="eye-left" cx="35" cy="40" r="5" fill="#333" id="eyeLeft"/>
+                        <circle class="eye-right" cx="65" cy="40" r="5" fill="#333" id="eyeRight"/>
+                        
+                        <!-- 宠物嘴巴 -->
+                        <path d="M 40 65 Q 50 75 60 65" stroke="#333" stroke-width="2" fill="none" id="mouth"/>
+                        
+                        <!-- 宠物耳朵 -->
+                        <ellipse cx="25" cy="25" rx="8" ry="12" fill="white" fill-opacity="0.7" id="earLeft"/>
+                        <ellipse cx="75" cy="25" rx="8" ry="12" fill="white" fill-opacity="0.7" id="earRight"/>
+                        
+                        <!-- 宠物尾巴 -->
+                        <path d="M 85 60 Q 95 50 90 40" stroke="white" stroke-width="5" stroke-opacity="0.7" fill="none" id="tail"/>
+                    </svg>
                 </div>
                 <div class="mood-indicator">
                     <span class="mood-text" id="moodText">一般</span>
@@ -335,6 +354,9 @@
             const hungerPercent = document.getElementById('hungerPercent');
             const moodText = document.getElementById('moodText');
             const mainContainer = document.getElementById('mainContainer');
+            const petBody = document.getElementById('petBody');
+            const mouth = document.getElementById('mouth');
+            const tail = document.getElementById('tail');
             
             hungerBar.style.width = (100 - hunger) + '%';
             hungerPercent.textContent = (100 - hunger) + '%';
@@ -343,15 +365,38 @@
             if (hunger <= 30) {
                 mood = 'happy';
                 moodText.textContent = '开心';
-                document.getElementById('petFace').textContent = '😄';
+                
+                // 开心时的宠物外观
+                petBody.setAttribute('fill-opacity', '0.9');
+                mouth.setAttribute('d', 'M 40 70 Q 50 80 60 70'); // 笑脸
+                tail.style.stroke = '#FFD700';
+                
+                // 添加动画类
+                document.getElementById('petSvg').classList.add('happy-animation');
+                document.getElementById('petSvg').classList.remove('sad-animation');
             } else if (hunger <= 70) {
                 mood = 'neutral';
                 moodText.textContent = '一般';
-                document.getElementById('petFace').textContent = '😊';
+                
+                // 一般时的宠物外观
+                petBody.setAttribute('fill-opacity', '0.7');
+                mouth.setAttribute('d', 'M 40 65 Q 50 75 60 65'); // 中性脸
+                tail.style.stroke = 'white';
+                
+                // 移除动画类
+                document.getElementById('petSvg').classList.remove('happy-animation', 'sad-animation');
             } else {
                 mood = 'sad';
                 moodText.textContent = '难过';
-                document.getElementById('petFace').textContent = '😢';
+                
+                // 难过时的宠物外观
+                petBody.setAttribute('fill-opacity', '0.5');
+                mouth.setAttribute('d', 'M 40 60 Q 50 50 60 60'); // 哭脸
+                tail.style.stroke = '#1E90FF';
+                
+                // 添加动画类
+                document.getElementById('petSvg').classList.add('sad-animation');
+                document.getElementById('petSvg').classList.remove('happy-animation');
             }
             
             // 更新背景颜色
@@ -372,16 +417,11 @@
             }, 200);
             
             // 宠物表情变化
-            const petFace = document.getElementById('petFace');
-            petFace.textContent = '🥰';
+            const mouth = document.getElementById('mouth');
+            const originalPath = mouth.getAttribute('d');
+            mouth.setAttribute('d', 'M 40 75 Q 50 85 60 75'); // 瞬间开心
             setTimeout(() => {
-                if (hunger <= 30) {
-                    petFace.textContent = '😄';
-                } else if (hunger <= 70) {
-                    petFace.textContent = '😊';
-                } else {
-                    petFace.textContent = '😢';
-                }
+                updateHungerDisplay(); // 恢复到正确的心情状态
             }, 300);
         }
 
