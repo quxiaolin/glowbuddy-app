@@ -110,9 +110,10 @@
         #petCanvas {
             width: 100%;
             height: 300px;
-            background: rgba(255, 255, 255, 0.1);
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,215,0,0.1) 100%);
             border-radius: 20px;
             cursor: pointer;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
 
         .mood-indicator {
@@ -330,29 +331,46 @@
 
         // 初始化 Three.js
         function initThreeJS() {
-            // 创建场景
+            // 创建场景 - 使用更漂亮的背景
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x000000);
+            scene.background = new THREE.Color(0xF5F7FA); // 淡灰色背景
+            
+            // 添加雾效
+            scene.fog = new THREE.Fog(0xF5F7FA, 10, 20);
             
             // 创建相机
             camera = new THREE.PerspectiveCamera(75, 300 / 300, 0.1, 1000);
-            camera.position.z = 5;
+            camera.position.set(0, 0, 5);
             
             // 创建渲染器
             const container = document.getElementById('petCanvas');
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer = new THREE.WebGLRenderer({ 
+                antialias: true, 
+                alpha: true,
+                logarithmicDepthBuffer: true // 改善深度精度
+            });
             renderer.setSize(container.clientWidth, container.clientHeight);
-            renderer.setClearColor(0x000000, 0); // 透明背景
+            renderer.setClearColor(0xF5F7FA, 1); // 设置背景色
+            renderer.shadowMap.enabled = true; // 启用阴影
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap; // 软阴影
             container.innerHTML = '';
             container.appendChild(renderer.domElement);
             
-            // 添加光源
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            // 添加光源 - 更自然的光照
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
             scene.add(ambientLight);
             
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(1, 1, 1);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(5, 5, 5);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 1024;
+            directionalLight.shadow.mapSize.height = 1024;
             scene.add(directionalLight);
+            
+            // 添加点光源增加细节
+            const pointLight = new THREE.PointLight(0xFFD700, 1, 10);
+            pointLight.position.set(2, 2, 2);
+            scene.add(pointLight);
             
             // 创建宠物组
             petGroup = new THREE.Group();
@@ -368,7 +386,7 @@
             setupInteractions();
         }
 
-        // 创建宠物
+        // 创建宠物 - 使用更详细的几何体
         function createPet() {
             // 清除现有宠物部件
             while (petGroup.children.length > 0) {
@@ -377,137 +395,153 @@
             
             petParts = {};
             
-            // 宠物身体 - 椭球体
+            // 宠物身体 - 使用更精细的几何体
             const bodyGeometry = new THREE.SphereGeometry(0.8, 32, 32);
             const bodyMaterial = new THREE.MeshPhongMaterial({ 
                 color: getMoodColor(),
-                shininess: 100
+                shininess: 100,
+                specular: 0x111111
             });
             petParts.body = new THREE.Mesh(bodyGeometry, bodyMaterial);
             petParts.body.scale.set(1, 0.8, 0.6); // 拉长形成身体
             petParts.body.position.y = 0;
+            petParts.body.castShadow = true;
+            petParts.body.receiveShadow = true;
             petGroup.add(petParts.body);
             
-            // 宠物头部 - 球体
+            // 宠物头部 - 更大的球体
             const headGeometry = new THREE.SphereGeometry(0.5, 32, 32);
             const headMaterial = new THREE.MeshPhongMaterial({ 
                 color: getMoodColor(),
-                shininess: 100
+                shininess: 100,
+                specular: 0x111111
             });
             petParts.head = new THREE.Mesh(headGeometry, headMaterial);
             petParts.head.position.set(0.8, 0.6, 0);
+            petParts.head.castShadow = true;
+            petParts.head.receiveShadow = true;
             petGroup.add(petParts.head);
             
-            // 宠物眼睛
+            // 宠物眼睛 - 更清晰的细节
             const eyeGeometry = new THREE.SphereGeometry(0.08, 16, 16);
-            const eyeMaterial = new THREE.MeshPhongMaterial({ color: 0x000000 });
+            const eyeMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x000000,
+                shininess: 100
+            });
             
             // 左眼
             petParts.eyeLeft = new THREE.Mesh(eyeGeometry, eyeMaterial);
             petParts.eyeLeft.position.set(0.95, 0.7, 0.3);
+            petParts.eyeLeft.castShadow = true;
             petGroup.add(petParts.eyeLeft);
             
             // 右眼
             petParts.eyeRight = new THREE.Mesh(eyeGeometry, eyeMaterial);
             petParts.eyeRight.position.set(0.95, 0.7, -0.3);
+            petParts.eyeRight.castShadow = true;
             petGroup.add(petParts.eyeRight);
             
-            // 宠物嘴巴
+            // 宠物瞳孔 - 增加细节
+            const pupilGeometry = new THREE.SphereGeometry(0.03, 16, 16);
+            const pupilMaterial = new THREE.MeshPhongMaterial({ color: 0xFFFFFF });
+            
+            const leftPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
+            leftPupil.position.set(0.02, 0, 0.02);
+            petParts.eyeLeft.add(leftPupil);
+            
+            const rightPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
+            rightPupil.position.set(0.02, 0, -0.02);
+            petParts.eyeRight.add(rightPupil);
+            
+            // 宠物嘴巴 - 更清晰的表情
             const mouthGeometry = new THREE.TorusGeometry(0.15, 0.05, 16, 32, Math.PI);
-            const mouthMaterial = new THREE.MeshPhongMaterial({ color: 0x000000 });
+            const mouthMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x000000,
+                shininess: 50
+            });
             petParts.mouth = new THREE.Mesh(mouthGeometry, mouthMaterial);
             petParts.mouth.position.set(1.0, 0.5, 0);
             petParts.mouth.rotation.x = Math.PI / 2;
             petGroup.add(petParts.mouth);
             
-            // 宠物耳朵
+            // 宠物耳朵 - 更精细的圆锥
             const earGeometry = new THREE.ConeGeometry(0.15, 0.4, 8);
-            const earMaterial = new THREE.MeshPhongMaterial({ color: getMoodColor() });
+            const earMaterial = new THREE.MeshPhongMaterial({ 
+                color: getMoodColor(),
+                shininess: 50
+            });
             
             // 左耳
             petParts.earLeft = new THREE.Mesh(earGeometry, earMaterial);
             petParts.earLeft.position.set(0.6, 1.0, 0.3);
             petParts.earLeft.rotation.z = Math.PI / 6;
+            petParts.earLeft.castShadow = true;
             petGroup.add(petParts.earLeft);
             
             // 右耳
             petParts.earRight = new THREE.Mesh(earGeometry, earMaterial);
             petParts.earRight.position.set(0.6, 1.0, -0.3);
             petParts.earRight.rotation.z = -Math.PI / 6;
+            petParts.earRight.castShadow = true;
             petGroup.add(petParts.earRight);
             
-            // 宠物腿
+            // 宠物腿 - 更精确的圆柱体
             const legGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.4, 8);
-            const legMaterial = new THREE.MeshPhongMaterial({ color: getMoodColor() });
+            const legMaterial = new THREE.MeshPhongMaterial({ 
+                color: getMoodColor(),
+                shininess: 50
+            });
             
             // 前左腿
             petParts.legFL = new THREE.Mesh(legGeometry, legMaterial);
             petParts.legFL.position.set(0.3, -0.5, 0.3);
+            petParts.legFL.rotation.x = Math.PI / 2;
+            petParts.legFL.castShadow = true;
             petGroup.add(petParts.legFL);
             
             // 前右腿
             petParts.legFR = new THREE.Mesh(legGeometry, legMaterial);
             petParts.legFR.position.set(0.3, -0.5, -0.3);
+            petParts.legFR.rotation.x = Math.PI / 2;
+            petParts.legFR.castShadow = true;
             petGroup.add(petParts.legFR);
             
             // 后左腿
             petParts.legBL = new THREE.Mesh(legGeometry, legMaterial);
             petParts.legBL.position.set(-0.3, -0.5, 0.3);
+            petParts.legBL.rotation.x = Math.PI / 2;
+            petParts.legBL.castShadow = true;
             petGroup.add(petParts.legBL);
             
             // 后右腿
             petParts.legBR = new THREE.Mesh(legGeometry, legMaterial);
             petParts.legBR.position.set(-0.3, -0.5, -0.3);
+            petParts.legBR.rotation.x = Math.PI / 2;
+            petParts.legBR.castShadow = true;
             petGroup.add(petParts.legBR);
             
-            // 宠物尾巴
+            // 宠物尾巴 - 更自然的形状
             const tailGeometry = new THREE.ConeGeometry(0.05, 0.6, 8);
-            const tailMaterial = new THREE.MeshPhongMaterial({ color: getMoodColor() });
+            const tailMaterial = new THREE.MeshPhongMaterial({ 
+                color: getMoodColor(),
+                shininess: 50
+            });
             petParts.tail = new THREE.Mesh(tailGeometry, tailMaterial);
             petParts.tail.position.set(-0.9, 0.2, 0);
             petParts.tail.rotation.z = -Math.PI / 4;
+            petParts.tail.castShadow = true;
             petGroup.add(petParts.tail);
             
-            // 添加发光效果
-            addGlowEffect();
-        }
-
-        // 添加发光效果
-        function addGlowEffect() {
-            // 为宠物添加发光材质
-            const glowMaterial = new THREE.MeshBasicMaterial({
-                color: 0xffffff,
-                transparent: true,
-                opacity: 0.3
+            // 添加基座
+            const baseGeometry = new THREE.CylinderGeometry(1.2, 1.2, 0.1, 32);
+            const baseMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xDDDDEE,
+                shininess: 30
             });
-            
-            // 创建发光外壳（略大于主体）
-            const glowGroup = new THREE.Group();
-            
-            // 为每个部分创建发光外壳
-            Object.keys(petParts).forEach(partName => {
-                const part = petParts[partName];
-                const geometry = part.geometry.clone();
-                
-                // 调整比例以创建发光效果
-                const glowPart = new THREE.Mesh(geometry, glowMaterial);
-                
-                // 根据部件调整大小
-                if (partName === 'body') {
-                    glowPart.scale.set(1.1, 1.1, 1.1);
-                } else if (partName === 'head') {
-                    glowPart.scale.set(1.1, 1.1, 1.1);
-                } else {
-                    glowPart.scale.set(1.2, 1.2, 1.2);
-                }
-                
-                glowPart.position.copy(part.position);
-                glowPart.rotation.copy(part.rotation);
-                
-                glowGroup.add(glowPart);
-            });
-            
-            petGroup.add(glowGroup);
+            const base = new THREE.Mesh(baseGeometry, baseMaterial);
+            base.position.y = -1.2;
+            base.receiveShadow = true;
+            petGroup.add(base);
         }
 
         // 获取心情对应的颜色
@@ -541,27 +575,28 @@
             // 宠物呼吸动画
             if (petParts.body) {
                 const time = Date.now() * 0.001;
-                petParts.body.scale.y = 0.8 + Math.sin(time) * 0.02;
-                petParts.body.scale.x = 1 + Math.cos(time) * 0.01;
+                petParts.body.scale.y = 0.8 + Math.sin(time) * 0.05;
+                petParts.body.scale.x = 1 + Math.cos(time * 0.8) * 0.02;
             }
             
             // 耳朵摆动
             if (petParts.earLeft && petParts.earRight) {
                 const earTime = Date.now() * 0.002;
-                petParts.earLeft.rotation.z = Math.PI / 6 + Math.sin(earTime) * 0.1;
-                petParts.earRight.rotation.z = -Math.PI / 6 + Math.sin(earTime + 1) * 0.1;
+                petParts.earLeft.rotation.z = Math.PI / 6 + Math.sin(earTime) * 0.15;
+                petParts.earRight.rotation.z = -Math.PI / 6 + Math.sin(earTime + 1) * 0.15;
             }
             
             // 尾巴摆动
             if (petParts.tail) {
                 const tailTime = Date.now() * 0.0015;
-                petParts.tail.rotation.z = -Math.PI / 4 + Math.sin(tailTime) * 0.2;
+                petParts.tail.rotation.z = -Math.PI / 4 + Math.sin(tailTime) * 0.25;
             }
             
             // 眼睛眨动
             if (petParts.eyeLeft && petParts.eyeRight) {
                 const blinkTime = Date.now() * 0.0005;
-                if (Math.sin(blinkTime) > 0.99) {
+                if (Math.abs(Math.sin(blinkTime * 3)) > 0.99) {
+                    // 快速眨眼睛
                     petParts.eyeLeft.scale.y = 0.1;
                     petParts.eyeRight.scale.y = 0.1;
                     
@@ -570,11 +605,11 @@
                             petParts.eyeLeft.scale.y = 1;
                             petParts.eyeRight.scale.y = 1;
                         }
-                    }, 100);
+                    }, 50);
                 }
             }
             
-            // 旋转宠物（如果在执行旋转动画）
+            // 旋转动画（如果在执行）
             if (window.isRotating) {
                 petGroup.rotation.y += 0.1;
             }
@@ -599,13 +634,13 @@
                 
                 // 根据点击次数执行不同动画
                 if (clickCount === 1) {
-                    handleClick();
+                    handleSingleClick();
                 } else if (clickCount === 2) {
-                    handleDouble();
+                    handleDoubleClick();
                 } else if (clickCount === 3) {
-                    handleTriple();
+                    handleTripleClick();
                 } else if (clickCount >= 4) {
-                    handleQuadruple();
+                    handleQuadrupleClick();
                 }
                 
                 // 重置点击计数
@@ -634,20 +669,20 @@
         }
 
         // 单击处理
-        function handleClick() {
+        function handleSingleClick() {
             // 增加金币
             coins += 1;
             document.getElementById('coinsDisplay').textContent = coins;
             
             // 创建粒子效果
-            createParticles();
+            createParticles(10, '#FFD700');
             
             // 宠物弹跳动画
             if (petParts.body) {
-                petParts.body.position.y += 0.2;
+                petParts.body.position.y += 0.3;
                 setTimeout(() => {
                     if (petParts.body) {
-                        petParts.body.position.y -= 0.2;
+                        petParts.body.position.y -= 0.3;
                     }
                 }, 200);
             }
@@ -665,8 +700,7 @@
         }
 
         // 双击处理
-        function handleDouble() {
-            // 增加更多金币
+        function handleDoubleClick() {
             coins += 2;
             document.getElementById('coinsDisplay').textContent = coins;
             
@@ -675,23 +709,22 @@
             
             // 宠物跳跃动画
             if (petParts.body) {
-                petParts.body.position.y += 0.5;
+                petParts.body.position.y += 0.6;
                 setTimeout(() => {
                     if (petParts.body) {
-                        petParts.body.position.y -= 0.5;
+                        petParts.body.position.y -= 0.6;
                     }
-                }, 300);
+                }, 400);
             }
         }
 
         // 三击处理
-        function handleTriple() {
-            // 增加更多金币
+        function handleTripleClick() {
             coins += 3;
             document.getElementById('coinsDisplay').textContent = coins;
             
             // 创建大量粒子效果
-            createParticles(30, '#FFD700');
+            createParticles(30, '#FF69B4');
             
             // 开始旋转动画
             window.isRotating = true;
@@ -701,21 +734,20 @@
         }
 
         // 四击处理
-        function handleQuadruple() {
-            // 增加大量金币
+        function handleQuadrupleClick() {
             coins += 5;
             document.getElementById('coinsDisplay').textContent = coins;
             
             // 创建大量彩色粒子
-            createParticles(50, '#FF69B4');
+            createParticles(50, '#FF1493');
             
             // 发光效果
-            petGroup.children.forEach(child => {
-                if (child.material && child.material.emissive) {
-                    child.material.emissive.setHex(0xffaa00);
+            Object.values(petParts).forEach(part => {
+                if (part.material && part.material.emissive) {
+                    part.material.emissive.setHex(0xffaa00);
                     setTimeout(() => {
-                        if (child.material && child.material.emissive) {
-                            child.material.emissive.setHex(0x000000);
+                        if (part.material && part.material.emissive) {
+                            part.material.emissive.setHex(0x000000);
                         }
                     }, 1000);
                 }
@@ -748,13 +780,16 @@
                 
                 // 宠物反应
                 if (petParts.body) {
-                    petParts.body.scale.set(1.2, 1.1, 1.2); // 短暂放大
+                    petParts.body.scale.set(1.1, 1.05, 1.1); // 短暂放大
                     setTimeout(() => {
                         if (petParts.body) {
                             petParts.body.scale.set(1, 0.8, 0.6);
                         }
                     }, 300);
                 }
+                
+                // 更新心情
+                updateMoodBasedOnHunger();
                 
                 alert('宠物吃饱了！');
             } else {
@@ -813,6 +848,11 @@
             hungerPercent.textContent = (100 - hunger) + '%';
             
             // 根据饱食度更新心情
+            updateMoodBasedOnHunger();
+        }
+
+        // 根据饱食度更新心情
+        function updateMoodBasedOnHunger() {
             if (hunger <= 30) {
                 mood = 'happy';
                 moodText.textContent = '开心';
@@ -861,6 +901,10 @@
             window.location.href = 'chat.html';
         }
 
+        function goHome() {
+            window.location.href = 'index.html';
+        }
+
         // 页面加载完成后初始化
         window.addEventListener('load', function() {
             createBackgroundEffects();
@@ -881,7 +925,7 @@
                 coins += 10;
                 document.getElementById('coinsDisplay').textContent = coins;
                 localStorage.setItem('lastRewardDate', today);
-                alert('每日奖励：获得10枚金币！');
+                alert('每日奖励', '获得10枚金币！');
             }
         }
 
