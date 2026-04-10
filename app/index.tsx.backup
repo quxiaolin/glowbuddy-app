@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, StatusBar, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, StatusBar, Alert, Dimensions, Linking } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withRepeat, withTiming } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -45,7 +45,6 @@ export default function HomeScreen() {
   });
   
   const [loading, setLoading] = useState(true);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const scale = useSharedValue(1);
   const rotation = useSharedValue(0);
   const opacity = useSharedValue(1);
@@ -53,15 +52,15 @@ export default function HomeScreen() {
   // 加载初始数据
   useEffect(() => {
     loadInitialData();
+    checkDailyReward();
   }, []);
 
   // 加载初始数据
   const loadInitialData = async () => {
     try {
-      // 确保数据库初始化
-      initDatabase();
+      setLoading(true);
+      await initDatabase(); // 确保数据库初始化
       
-      // 获取宠物状态
       const status = await getPetStatus();
       if (status) {
         setPetStatus({
@@ -70,23 +69,12 @@ export default function HomeScreen() {
           coins: status.coins,
           lastFed: status.last_fed ? new Date(status.last_fed) : null
         });
-      } else {
-        // 如果没有状态数据，使用默认值
-        setPetStatus({
-          mood: 'neutral',
-          hunger: 50,
-          coins: 10,
-          lastFed: null
-        });
       }
-      
-      // 检查每日奖励
-      await checkDailyReward();
     } catch (error) {
       console.error('Error loading pet status:', error);
       handleAppError(error, 'HomeScreen.loadInitialData');
       
-      // 即使出错也要确保使用默认值
+      // 使用默认值
       setPetStatus({
         mood: 'neutral',
         hunger: 50,
@@ -94,9 +82,7 @@ export default function HomeScreen() {
         lastFed: null
       });
     } finally {
-      // 确保无论成功或失败都会停止加载状态
       setLoading(false);
-      setInitialLoadComplete(true);
     }
   };
 
@@ -227,10 +213,9 @@ export default function HomeScreen() {
     };
   });
 
-  // 在加载期间显示加载界面，即使有错误也要确保显示主界面
-  if (loading && !initialLoadComplete) {
+  if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: '#FFA500' }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: getMoodColor() }]}>
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>正在加载宠物...</Text>
         </View>
@@ -258,7 +243,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
       
-      {/* 寵物区域 */}
+      {/* 宠物区域 */}
       <View style={styles.petArea}>
         <TouchableOpacity
           style={styles.petContainer}

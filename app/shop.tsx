@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, SafeAreaView, Alert, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, SafeAreaView, Alert, StatusBar, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { getCoins, subtractCoins, hasEnoughCoins, addItemToInventory, getInventory, recordPurchase } from '../utils/database';
 
 // 商品类型定义
 type Item = {
@@ -19,9 +20,10 @@ type PurchaseRecord = {
 };
 
 export default function ShopScreen() {
-  const [coins, setCoins] = useState(50); // 示例金币数
-  const [inventory, setInventory] = useState<string[]>([]); // 拥有的物品
+  const [coins, setCoins] = useState(0);
+  const [inventory, setInventory] = useState<string[]>([]);
   const [purchaseHistory, setPurchaseHistory] = useState<PurchaseRecord[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
   
   // 商品列表
   const items: Item[] = [
@@ -69,28 +71,72 @@ export default function ShopScreen() {
     }
   ];
 
-  // 购买商品
-  const purchaseItem = (item: Item) => {
-    if (coins < item.price) {
-      Alert.alert('金币不足', `您需要 ${item.price} 金币，但只有 ${coins} 金币`);
-      return;
+  // 加载初始数据
+  useEffect(() => {
+    loadShopData();
+  }, []);
+
+  const loadShopData = async () => {
+    try {
+      // 获取当前金币
+      const currentCoins = await getCoins();
+      setCoins(currentCoins);
+      
+      // 获取库存
+      const currentInventory = await getInventory();
+      setInventory(currentInventory.map(item => item.id));
+    } catch (error) {
+      console.error('Error loading shop data:', error);
+      Alert.alert('错误', '加载商店数据失败');
     }
+  };
 
-    // 扣除金币
-    const newCoins = coins - item.price;
-    setCoins(newCoins);
+  // 下拉刷新
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadShopData();
+    setRefreshing(false);
+  };
 
-    // 添加到库存
-    setInventory([...inventory, item.id]);
+  // 购买商品
+  const purchaseItem = async (item: Item) => {
+    try {
+      if (coins < item.price) {
+        Alert.alert('金币不足', `您需要 ${item.price} 金币，但只有 ${coins} 金币`);
+        return;
+      }
 
-    // 添加购买记录
-    const newRecord: PurchaseRecord = {
-      itemId: item.id,
-      timestamp: new Date()
-    };
-    setPurchaseHistory([...purchaseHistory, newRecord]);
+      // 检查是否有足够金币
+      const canAfford = await hasEnoughCoins(item.price);
+      if (!canAfford) {
+        Alert.alert('金币不足', `您的金币不足以购买 ${item.name}`);
+        return;
+      }
 
-    Alert.alert('购买成功', `您购买了 ${item.name}！`);
+      // 扣除金币
+      await subtractCoins(item.price);
+      const newCoins = coins - item.price;
+      setCoins(newCoins);
+
+      // 添加到库存
+      await addItemToInventory(item.id);
+      setInventory([...inventory, item.id]);
+
+      // 记录购买历史
+      const newRecord: PurchaseRecord = {
+        itemId: item.id,
+        timestamp: new Date()
+      };
+      setPurchaseHistory([...purchaseHistory, newRecord]);
+
+      // 记录购买
+      await recordPurchase(item.id, item.price);
+
+      Alert.alert('购买成功', `您购买了 ${item.name}！`);
+    } catch (error) {
+      console.error('Error purchasing item:', error);
+      Alert.alert('购买失败', '购买过程中出现错误，请重试');
+    }
   };
 
   // 渲染商品项
@@ -157,6 +203,9 @@ export default function ShopScreen() {
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       />
     </SafeAreaView>
   );

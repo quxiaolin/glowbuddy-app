@@ -106,7 +106,7 @@ export const limitChecker = {
 
 // 通用错误处理器
 export const handleAppError = (error: any, context: string = 'Application'): void => {
-  console.error(\`[\${context}] Error occurred:\`, error);
+  console.error(`[${context}] Error occurred:`, error);
 
   // 根据错误类型采取不同措施
   if (error instanceof AppError) {
@@ -144,7 +144,7 @@ export const retryOperation = async <T>(
       return await operation();
     } catch (error) {
       lastError = error;
-      console.warn(\`Operation failed, attempt \${i + 1}/\${maxRetries}\`, error);
+      console.warn(`Operation failed, attempt ${i + 1}/${maxRetries}`, error);
       
       if (i < maxRetries - 1) {
         await new Promise(resolve => setTimeout(resolve, delay));
