@@ -126,7 +126,7 @@ export default function HomeScreen() {
   const handlePress = async () => {
     try {
       // 触发震动反馈
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       
       // 弹跳动画
       scale.value = withSpring(1.2, {}, (finished) => {
@@ -158,7 +158,7 @@ export default function HomeScreen() {
   // 长按喂食
   const handleLongPress = async () => {
     try {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       
       // 检查是否有足够的饱食度减少空间
       if (petStatus.hunger <= 0) {
@@ -227,10 +227,10 @@ export default function HomeScreen() {
     };
   });
 
-  // 修复：确保即使加载失败也显示主界面
+  // 在加载期间显示加载界面，即使有错误也要确保显示主界面
   if (loading && !initialLoadComplete) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: getMoodColor() }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: '#FFA500' }]}>
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>正在加载宠物...</Text>
         </View>
