@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商店 - GlowBuddy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        /* 头部 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: white;
+            border-bottom: 1px solid #eee;
+        }
+
+        .back-button {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #333;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .coins-container {
+            display: flex;
+            align-items: center;
+            background: #FFD700;
+            padding: 6px 12px;
+            border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .coins-text {
+            color: #856404;
+            font-size: 16px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: bold;
+            text-align: center;
+            margin: 10px 0;
+            color: #333;
+        }
+
+        .page-subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            padding: 0 20px;
+        }
+
+        /* 商品列表 */
+        .list-container {
+            padding: 15px;
+        }
+
+        .item-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #eee;
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .item-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .item-price {
+            font-size: 16px;
+            color: #FF6B35;
+            font-weight: bold;
+        }
+
+        .item-description {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+            line-height: 20px;
+        }
+
+        .item-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .item-type {
+            font-size: 12px;
+            color: #888;
+            font-style: italic;
+        }
+
+        .owned-tag {
+            background: #4CAF50;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .buy-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .disabled-button {
+            background: #CCCCCC;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #333;
+            text-decoration: none;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        .nav-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        /* 底部导航 */
+        .bottom-nav {
+            display: flex;
+            justify-content: space-around;
+            padding: 15px 0;
+            background: #f8f9fa;
+            border-top: 1px solid #eee;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <button class="back-button">←</button>
+            <div class="coins-container">
+                💰
+                <span class="coins-text">100</span>
+            </div>
+        </div>
+        
+        <h1 class="page-title">商店</h1>
+        <p class="page-subtitle">用金币购买物品来照顾你的宠物</p>
+        
+        <!-- 商品列表 -->
+        <div class="list-container">
+            <div class="item-card">
+                <div class="item-header">
+                    <div class="item-name">美味食物</div>
+                    <div class="item-price">10 💰</div>
+                </div>
+                <div class="item-description">增加20点饱食度</div>
+                <div class="item-footer">
+                    <div class="item-type">类型: 食物</div>
+                    <button class="buy-button">购买</button>
+                </div>
+            </div>
+            
+            <div class="item-card">
+                <div class="item-header">
+                    <div class="item-name">营养大餐</div>
+                    <div class="item-price">20 💰</div>
+                </div>
+                <div class="item-description">增加50点饱食度</div>
+                <div class="item-footer">
+                    <div class="item-type">类型: 食物</div>
+                    <button class="buy-button">购买</button>
+                </div>
+            </div>
+            
+            <div class="item-card">
+                <div class="item-header">
+                    <div class="item-name">弹跳球</div>
+                    <div class="item-price">15 💰</div>
+                </div>
+                <div class="item-description">让宠物更开心</div>
+                <div class="item-footer">
+                    <div class="item-type">类型: 玩具</div>
+                    <button class="buy-button">购买</button>
+                </div>
+            </div>
+            
+            <div class="item-card">
+                <div class="item-header">
+                    <div class="item-name">小帽子</div>
+                    <div class="item-price">25 💰</div>
+                </div>
+                <div class="item-description">可爱的装饰品</div>
+                <div class="item-footer">
+                    <div class="item-type">类型: 装饰</div>
+                    <button class="buy-button">购买</button>
+                </div>
+            </div>
+            
+            <div class="item-card">
+                <div class="item-header">
+                    <div class="item-name">豪华套餐</div>
+                    <div class="item-price">30 💰</div>
+                </div>
+                <div class="item-description">增加满额饱食度</div>
+                <div class="item-footer">
+                    <div class="item-type">类型: 食物</div>
+                    <button class="buy-button">购买</button>
+                </div>
+            </div>
+            
+            <div class="item-card">
+                <div class="item-header">
+                    <div class="item-name">发光玩具</div>
+                    <div class="item-price">35 💰</div>
+                </div>
+                <div class="item-description">最有趣的玩具</div>
+                <div class="item-footer">
+                    <div class="item-type">类型: 玩具</div>
+                    <button class="buy-button">购买</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部导航 -->
+        <div class="bottom-nav">
+            <a href="index.html" class="nav-item">
+                <span class="nav-icon">🏠</span>
+                <span>主页</span>
+            </a>
+            <a href="shop.html" class="nav-item">
+                <span class="nav-icon">🛒</span>
+                <span>商店</span>
+            </a>
+            <a href="chat.html" class="nav-item">
+                <span class="nav-icon">💬</span>
+                <span>对话</span>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // 模拟购买功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const buyButtons = document.querySelectorAll('.buy-button');
+            const coinsText = document.querySelector('.coins-text');
+            
+            let coins = 100;
+            
+            buyButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const priceText = this.closest('.item-card').querySelector('.item-price').textContent;
+                    const price = parseInt(priceText.match(/\d+/)[0]);
+                    
+                    if (coins >= price) {
+                        coins -= price;
+                        coinsText.textContent = coins;
+                        alert('购买成功！' + this.closest('.item-card').querySelector('.item-name').textContent);
+                        
+                        // 改变按钮为已拥有
+                        this.textContent = '已拥有';
+                        this.classList.remove('buy-button');
+                        this.classList.add('owned-tag');
+                        this.disabled = true;
+                    } else {
+                        alert('金币不足！');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

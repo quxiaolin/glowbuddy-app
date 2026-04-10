@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GlowBuddy - 电子宠物应用静态界面预览</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.2em;
+        }
+
+        .nav-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .nav-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .nav-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .nav-title {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .nav-description {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .preview-frame {
+            width: 100%;
+            height: 500px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .preview-frame.active {
+            display: block;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .control-button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s ease;
+        }
+
+        .control-button:hover {
+            background: #764ba2;
+        }
+
+        .features {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .features h2 {
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .feature-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .feature-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .feature-desc {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✨ GlowBuddy ✨</h1>
+            <p>电子宠物应用静态界面预览</p>
+        </div>
+
+        <div class="nav-grid">
+            <div class="nav-card" onclick="loadPage('index.html')">
+                <span class="nav-icon">🏠</span>
+                <h3 class="nav-title">主页</h3>
+                <p class="nav-description">宠物互动界面，点击宠物、喂食、查看心情和饱食度</p>
+            </div>
+            
+            <div class="nav-card" onclick="loadPage('shop.html')">
+                <span class="nav-icon">🛒</span>
+                <h3 class="nav-title">商店</h3>
+                <p class="nav-description">购买食物、玩具、装饰品等道具</p>
+            </div>
+            
+            <div class="nav-card" onclick="loadPage('chat.html')">
+                <span class="nav-icon">💬</span>
+                <h3 class="nav-title">AI 对话</h3>
+                <p class="nav-description">与宠物进行智能对话（每日限制30次）</p>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="control-button" onclick="loadPage('index.html')">加载主页</button>
+            <button class="control-button" onclick="loadPage('shop.html')">加载商店</button>
+            <button class="control-button" onclick="loadPage('chat.html')">加载对话</button>
+        </div>
+
+        <div class="preview-frame" id="previewFrame">
+            <iframe id="previewIframe" src="about:blank"></iframe>
+        </div>
+
+        <div class="features">
+            <h2>应用功能特性</h2>
+            <div class="features-grid">
+                <div class="feature-item">
+                    <span class="feature-icon">🐾</span>
+                    <div class="feature-title">互动宠物</div>
+                    <div class="feature-desc">可爱的虚拟宠物，会根据状态显示不同心情</div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">💰</span>
+                    <div class="feature-title">经济系统</div>
+                    <div class="feature-desc">金币奖励、商店购物、喂食消耗</div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🤖</span>
+                    <div class="feature-title">AI 对话</div>
+                    <div class="feature-desc">与宠物进行智能对话（每日限制30次）</div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">💾</span>
+                    <div class="feature-title">本地存储</div>
+                    <div class="feature-desc">使用 SQLite 存储所有用户数据</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function loadPage(page) {
+            const frame = document.getElementById('previewFrame');
+            const iframe = document.getElementById('previewIframe');
+            
+            // 设置 iframe 源
+            iframe.src = page;
+            
+            // 显示预览框
+            frame.classList.add('active');
+            
+            // 滚动到预览框
+            frame.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
